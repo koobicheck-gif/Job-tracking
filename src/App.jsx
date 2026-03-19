@@ -204,11 +204,21 @@ function MapView({ jobs }) {
 }
 
 function JobCard({ job, onUpdate, onDelete }) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState(job);
+  const [editing,    setEditing]    = useState(false);
+  const [form,       setForm]       = useState(job);
+  const [editingPay, setEditingPay] = useState(false);
+  const [payDraft,   setPayDraft]   = useState(job.pay);
 
   const save = () => { onUpdate(form); setEditing(false); };
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const commitPay = () => {
+    const raw = payDraft.trim();
+    // Normalize: prepend $ if missing
+    const normalized = raw && !raw.startsWith("$") ? `$${raw}` : raw;
+    onUpdate({ ...job, pay: normalized });
+    setEditingPay(false);
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-3">
@@ -223,7 +233,28 @@ function JobCard({ job, onUpdate, onDelete }) {
           <div className="flex flex-wrap gap-2 mt-1">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[job.status]}`}>{job.status}</span>
             {job.jobType && <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">{job.jobType}</span>}
-            {job.pay     && <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">{job.pay}</span>}
+            {editingPay ? (
+              <span className="flex items-center gap-1">
+                <span className="text-xs text-gray-400">$</span>
+                <input
+                  autoFocus
+                  className="text-xs w-20 border-b border-emerald-400 bg-transparent outline-none text-emerald-700 font-semibold"
+                  value={payDraft.replace(/^\$/, "")}
+                  onChange={e => setPayDraft(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") commitPay(); if (e.key === "Escape") setEditingPay(false); }}
+                />
+                <button onClick={commitPay} className="text-xs text-emerald-600 hover:text-emerald-800 font-bold">✓</button>
+                <button onClick={() => setEditingPay(false)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
+              </span>
+            ) : (
+              <button
+                onClick={() => { setPayDraft(job.pay || ""); setEditingPay(true); }}
+                className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold hover:bg-emerald-200"
+                title="Click to edit price"
+              >
+                {job.pay || <span className="text-emerald-500 italic">+ price</span>}
+              </button>
+            )}
             {job.roofer  && <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">📤 {job.roofer}</span>}
           </div>
         </div>
