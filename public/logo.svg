@@ -1,0 +1,26 @@
+<svg viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Red roof peak -->
+  <polygon points="200,10 370,180 310,180 310,240 90,240 90,180 30,180" fill="#C0392B"/>
+  <!-- White house interior fill -->
+  <polygon points="200,45 345,185 55,185" fill="white"/>
+  <!-- Navy handshake body (left arm) -->
+  <path d="M55,185 L130,260 L160,290 L180,270 L200,285 L185,305 L160,320 L130,300 L90,270 L55,240 Z" fill="#1B2D4F"/>
+  <!-- Navy handshake body (right arm) -->
+  <path d="M345,185 L270,260 L240,290 L220,270 L200,285 L215,305 L240,320 L270,300 L310,270 L345,240 Z" fill="#1B2D4F"/>
+  <!-- Clasped hands center -->
+  <ellipse cx="200" cy="280" rx="50" ry="35" fill="#1B2D4F"/>
+  <path d="M155,268 Q170,255 200,258 Q230,255 245,268 Q240,295 200,300 Q160,295 155,268Z" fill="#253F6B"/>
+  <!-- Finger lines -->
+  <line x1="175" y1="280" x2="165" y2="300" stroke="#1B2D4F" stroke-width="3" stroke-linecap="round"/>
+  <line x1="185" y1="283" x2="178" y2="305" stroke="#1B2D4F" stroke-width="3" stroke-linecap="round"/>
+  <line x1="215" y1="283" x2="222" y2="305" stroke="#1B2D4F" stroke-width="3" stroke-linecap="round"/>
+  <line x1="225" y1="280" x2="235" y2="300" stroke="#1B2D4F" stroke-width="3" stroke-linecap="round"/>
+  <!-- Window grid -->
+  <rect x="184" y="60" width="32" height="32" rx="2" fill="#1B2D4F"/>
+  <line x1="200" y1="60" x2="200" y2="92" stroke="white" stroke-width="3"/>
+  <line x1="184" y1="76" x2="216" y2="76" stroke="white" stroke-width="3"/>
+  <!-- Text: ROOF REPAIR -->
+  <text x="200" y="375" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" text-anchor="middle" fill="#1B2D4F" letter-spacing="1">ROOF REPAIR</text>
+  <!-- Text: PARTNERS -->
+  <text x="200" y="430" font-family="Arial Black, sans-serif" font-size="48" font-weight="900" text-anchor="middle" fill="#C0392B" letter-spacing="2">PARTNERS</text>
+</svg>
