@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - claude/roofing-job-tracker-vPpcW
 
 permissions:
   contents: read
