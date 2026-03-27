@@ -27,7 +27,8 @@ const STATUSES  = ["Pending","Accepted","Scheduled","Completed","Declined"];
 
 const JOB_KEYWORDS = [
   ["Final Report",  ["final report","roof final","final"]],
-  ["Pipe Boot",     ["pipe boot"]],
+  ["Pipe Boot",     ["pipe boot","pipe boots"]],
+  ["Pipe Jack",     ["pipe jack","pipejack","pipe jacks","pipejacks"]],
   ["Shingle Repair",["shingle repair"]],
   ["Flashing",      ["flashing"]],
   ["Valley Repair", ["valley repair","valley"]],
@@ -35,12 +36,26 @@ const JOB_KEYWORDS = [
   ["Full Repair",   ["full repair"]],
 ];
 
+// Keywords that signal a line is an extra task, not a shingle/material description
+const EXTRA_TASK_PATTERNS = [
+  /^replace\b/i, /^install\b/i, /^paint\b/i, /^painting\b/i,
+  /^add\b/i, /^remove\b/i, /^caulk\b/i, /^seal\b/i,
+  /^clean\b/i, /^repair\b/i, /^reset\b/i, /^re-?nail\b/i,
+  /pipe\s*(jack|boot|jacks|boots)/i, /pvc\s*pipe/i,
+  /drip\s*edge/i, /ice\s*(barrier|dam)/i, /starter\s*(strip)?/i,
+  /\d+\s*(pipe|boot|jack|shingle|nail|sheet|bundle)/i,
+];
+
+function isExtraTask(text) {
+  return EXTRA_TASK_PATTERNS.some(p => p.test(text));
+}
+
 // ── Parsing ───────────────────────────────────────────────────────────────────
 function parseJobBlock(block, idOffset = 0) {
   const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
   const job = {
     id: Date.now() + idOffset,
-    address: "", jobType: "", pitch: "", shingle: "",
+    address: "", jobType: "", extras: [], pitch: "", shingle: "",
     shingleColor: "", shingleType: "", pay: "", roofer: "", notes: "",
     status: "Pending", raw: block,
   };
@@ -55,16 +70,52 @@ function parseJobBlock(block, idOffset = 0) {
       job.roofer = cleaned.replace(/^(roofer|from|sent by)[:\s]*/i, "").trim(); return;
     }
     if (/^notes?[:\s]/i.test(l)) { job.notes = cleaned.replace(/^notes?[:\s]*/i, "").trim(); return; }
-    let matched = false;
+
+    // Split on "&" or "+" to detect inline extras on the same line as the job type
+    // e.g. "Roof Final & Paint PVC Pipes" → main="Roof Final", extras=["Paint PVC Pipes"]
+    const parts = cleaned.split(/\s*[&+]\s*/);
+    let mainPart = parts[0].trim();
+    const inlineExtras = parts.slice(1).map(p => p.trim()).filter(Boolean);
+
+    let matchedType = false;
     for (const [type, keywords] of JOB_KEYWORDS) {
-      if (keywords.some(kw => l.includes(kw))) { job.jobType = type; matched = true; break; }
+      if (keywords.some(kw => mainPart.toLowerCase().includes(kw))) {
+        job.jobType = type;
+        matchedType = true;
+        break;
+      }
     }
-    if (matched) return;
+
+    if (matchedType) {
+      // Add any inline extras from the same line
+      inlineExtras.forEach(e => { if (!job.extras.includes(e)) job.extras.push(e); });
+      return;
+    }
+
+    // Check if this whole line is a secondary job type (e.g. standalone "Replace 2 pipe boots")
+    let matchedAsExtra = false;
+    for (const [type, keywords] of JOB_KEYWORDS) {
+      if (keywords.some(kw => l.includes(kw))) {
+        // It's a known job type appearing as a second line — treat as extra
+        if (!job.extras.includes(cleaned)) job.extras.push(cleaned);
+        matchedAsExtra = true;
+        break;
+      }
+    }
+    if (matchedAsExtra) return;
+
+    // Generic extra task line detection
+    if (isExtraTask(cleaned)) {
+      if (!job.extras.includes(cleaned)) job.extras.push(cleaned);
+      return;
+    }
+
+    // Fallback: shingle/material description
     if (!job.shingle) {
       job.shingle = cleaned;
-      const parts = cleaned.split(" ");
-      job.shingleType = parts[0];
-      job.shingleColor = parts.slice(1).join(" ");
+      const sp = cleaned.split(" ");
+      job.shingleType  = sp[0];
+      job.shingleColor = sp.slice(1).join(" ");
     }
   });
   return job;
@@ -193,7 +244,7 @@ function JobCard({ job, onUpdate, onDelete }) {
     setEditingPay(false);
   };
 
-  const hasDetails = job.shingle || job.pitch || job.notes;
+  const hasDetails = job.shingle || job.pitch || job.notes || (job.extras && job.extras.length > 0);
   const sm = STATUS_META[job.status] || STATUS_META.Pending;
 
   return (
@@ -266,6 +317,12 @@ function JobCard({ job, onUpdate, onDelete }) {
               {job.jobType}
             </span>
           )}
+          {(job.extras || []).map((extra, idx) => (
+            <span key={idx} className="text-xs font-medium px-2.5 py-1 rounded-full"
+              style={{ background: "#FFF7ED", color: "#9A3412" }}>
+              {extra}
+            </span>
+          ))}
 
           {/* Inline pay editor */}
           {editingPay ? (
@@ -362,6 +419,19 @@ function JobCard({ job, onUpdate, onDelete }) {
               >
                 {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium mb-1" style={{ color: "#64748B" }}>
+                Extra Tasks
+                <span className="ml-1 font-normal" style={{ color: "#94A3B8" }}>(one per line)</span>
+              </label>
+              <textarea
+                className="w-full rounded-xl px-3 py-2 text-xs outline-none resize-none font-mono"
+                style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", color: "#0F172A" }}
+                rows={3}
+                value={(form.extras || []).join("\n")}
+                onChange={e => f("extras", e.target.value.split("\n").map(s => s.trim()).filter(Boolean))}
+              />
             </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium mb-1" style={{ color: "#64748B" }}>Notes</label>
